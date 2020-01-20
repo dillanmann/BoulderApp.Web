@@ -9,7 +9,7 @@ namespace BoulderApp.GraphQL
         public BoulderAppSchema(IDependencyResolver resolver)
             : base(resolver)
         {
-            Query = resolver.Resolve<QueryType>();
+            Query = resolver.Resolve<BoulderAppQuery>();
             Mutation = resolver.Resolve<BoulderAppMutation>();
         }
     }

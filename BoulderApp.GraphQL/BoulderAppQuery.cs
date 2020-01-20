@@ -7,9 +7,9 @@ using System;
 
 namespace BoulderApp.GraphQL
 {
-    public class QueryType : ObjectGraphType
+    public class BoulderAppQuery : ObjectGraphType
     {        
-        public QueryType(BoulderAppContext repository)
+        public BoulderAppQuery(BoulderAppContext repository)
         {
             Name = "SessionsQuery";
 
