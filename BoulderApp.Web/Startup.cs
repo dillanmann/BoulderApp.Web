@@ -21,6 +21,7 @@ namespace BoulderApp.Web
     public class Startup
     {
         private static ILog _logger;
+        private readonly string CorsPolicyName = "_BoulderAppCorsPolicy";
 
         public Startup(IConfiguration configuration)
         {
@@ -41,6 +42,18 @@ namespace BoulderApp.Web
             }
             services.AddDbContext<BoulderAppContext>(
                 options => options.UseNpgsql(pgsqlConString));
+
+            if (Configuration.GetValue<bool>("EnableCors"))
+            {
+                _logger.Debug("Enabling CORS policy");
+                services.AddCors(o => o.AddPolicy(CorsPolicyName, builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader()
+                           .AllowCredentials();
+                }));
+            }
 
 
             AddGraphQL(services);
