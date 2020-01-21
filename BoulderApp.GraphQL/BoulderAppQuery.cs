@@ -15,14 +15,29 @@ namespace BoulderApp.GraphQL
 
             FieldAsync<ListGraphType<SessionType>>(
                 "sessions",
-                resolve: async context => await repository.Sessions.ToListAsync()
+                resolve: async context => await repository.Sessions
+                .Include(s => s.Center)
+                .Include(s => s.ProblemAttempts)
+                .ThenInclude(pa => pa.ProblemAttempted)
+                .Include(s => s.User)
+                .ToListAsync()
                 );
             FieldAsync<ListGraphType<CircuitType>>(
                 "circuits",
-                resolve: async context =>
-                {
-                    return await repository.Circuits.Include(c => c.Problems).ToListAsync();
-                });
+                resolve: async context => await repository.Circuits.Include(c => c.Problems).ToListAsync()
+                );
+            FieldAsync<ListGraphType<CenterType>>(
+                "centers",
+                resolve: async context => await repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems).ToListAsync()
+                );
+            FieldAsync<ListGraphType<ProblemType>>(
+                "problems",
+                resolve: async context => await repository.Problems.ToListAsync()
+                );
+            FieldAsync<ListGraphType<ProblemAttemptType>>(
+                "problemAttempts",
+                resolve: async context => await repository.ProblemAttempts.Include(p => p.ProblemAttempted).ToListAsync()
+                );
 
             FieldAsync<ListGraphType<BoulderAppDataGraphType>>(
                 "boulderAppData",
