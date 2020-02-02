@@ -4,6 +4,7 @@ using BoulderApp.Web.Types;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 
 namespace BoulderApp.GraphQL
 {
@@ -28,8 +29,18 @@ namespace BoulderApp.GraphQL
                 );
             FieldAsync<ListGraphType<CenterType>>(
                 "centers",
-                resolve: async context => await repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems).ToListAsync()
-                );
+                arguments: new QueryArguments(
+                    new QueryArgument<IdGraphType> { Name = "id" }
+                    ),
+                resolve: async context => 
+                {
+                    var centers = repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems);
+                    var id = context.GetArgument<Guid>("id");
+                    if (id != default)
+                        return await centers.Where(c => c.Id == id).ToListAsync();
+
+                    return await repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems).ToListAsync();                    
+                });
             FieldAsync<ListGraphType<ProblemType>>(
                 "problems",
                 resolve: async context => await repository.Problems.ToListAsync()
