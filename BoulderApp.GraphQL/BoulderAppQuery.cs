@@ -3,87 +3,54 @@ using BoulderApp.Model;
 using BoulderApp.Web.Types;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace BoulderApp.GraphQL
 {
     public class BoulderAppQuery : ObjectGraphType
-    {        
+    {
         public BoulderAppQuery(BoulderAppContext repository)
         {
-            Name = "SessionsQuery";
+            Name = "BoulderAppQueries";
 
             FieldAsync<ListGraphType<SessionType>>(
                 "sessions",
-                resolve: async context => await repository.Sessions
-                .Include(s => s.Center)
-                .Include(s => s.ProblemAttempts)
-                .ThenInclude(pa => pa.ProblemAttempted)
-                .Include(s => s.User)
-                .ToListAsync()
+                resolve: async context => await AddSessionIncludes(repository.Sessions).ToListAsync()
                 );
             FieldAsync<ListGraphType<CircuitType>>(
                 "circuits",
-                resolve: async context => await repository.Circuits.Include(c => c.Problems).ToListAsync()
+                resolve: async context => await AddCircuitIncludes(repository.Circuits).ToListAsync()
                 );
             FieldAsync<ListGraphType<CenterType>>(
                 "centers",
-                arguments: new QueryArguments(
-                    new QueryArgument<IdGraphType> { Name = "id" }
-                    ),
-                resolve: async context => 
-                {
-                    var centers = repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems);
-                    var id = context.GetArgument<Guid>("id");
-                    if (id != default)
-                        return await centers.Where(c => c.Id == id).ToListAsync();
-
-                    return await repository.Centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems).ToListAsync();                    
-                });
+                resolve: async context => await AddCenterIncludes(repository.Centers).ToListAsync());
             FieldAsync<ListGraphType<ProblemType>>(
                 "problems",
                 resolve: async context => await repository.Problems.ToListAsync()
                 );
             FieldAsync<ListGraphType<ProblemAttemptType>>(
                 "problemAttempts",
-                resolve: async context => await repository.ProblemAttempts.Include(p => p.ProblemAttempted).ToListAsync()
+                resolve: async context => await AddProblemAttemptIncludes(repository.ProblemAttempts).ToListAsync()
                 );
-
-            FieldAsync<ListGraphType<BoulderAppDataGraphType>>(
-                "boulderAppData",
-                arguments: new QueryArguments(
-                    new QueryArgument<BoulderAppDataTypeEnumGraphType> { Name = "dataType" }
-                    ),
-                resolve: async context =>
-                {
-                    var dataType = context.GetArgument<BoulderAppDataType>("dataType");
-                    switch (dataType)
-                    {
-                        case BoulderAppDataType.Center:
-                            return await repository.Centers
-                            .Include(c => c.Circuits)
-                            .ThenInclude(c => c.Problems)
-                            .ToListAsync();
-                        case BoulderAppDataType.Circuit:
-                            return await repository.Circuits
-                            .Include(c => c.Problems)
-                            .ToListAsync();
-                        case BoulderAppDataType.ProblemAttempt:
-                            return await repository.ProblemAttempts.ToListAsync();
-                        case BoulderAppDataType.Problem:
-                            return await repository.Problems.ToListAsync();
-                        case BoulderAppDataType.Session:
-                            return await repository.Sessions
-                            .Include(c => c.Center.Circuits)
-                            .ThenInclude(c => c.Problems)
-                            .ToListAsync();
-                        case BoulderAppDataType.User:
-                            return repository.Users;
-                        default:
-                            throw new InvalidOperationException("Failed to fetch data for unrecognised data type");
-                    }
-                });
         }
+
+        private IIncludableQueryable<Session, User> AddSessionIncludes(DbSet<Session> sessions) =>
+            sessions.Include(s => s.Center)
+                .Include(s => s.ProblemAttempts)
+                .ThenInclude(pa => pa.ProblemAttempted)
+                .Include(s => s.User);
+
+        private IIncludableQueryable<Circuit, ICollection<Problem>> AddCircuitIncludes(DbSet<Circuit> circuits)
+            => circuits.Include(c => c.Problems);
+
+        private IIncludableQueryable<Center, ICollection<Problem>> AddCenterIncludes(DbSet<Center> centers)
+            => centers.Include(c => c.Circuits).ThenInclude(circ => circ.Problems);
+
+        private IIncludableQueryable<ProblemAttempt, Problem> AddProblemAttemptIncludes(DbSet<ProblemAttempt> problems)
+            => problems.Include(p => p.ProblemAttempted);
     }
 }
