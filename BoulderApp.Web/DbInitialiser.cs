@@ -9,7 +9,7 @@ namespace BoulderApp.Web
 {
     public static class DbInitialiser
     {
-        public static async Task Initialise(BoulderAppContext context)
+        public static async Task InitialiseAsync(BoulderAppContext context)
         {
             context.Database.EnsureCreated();
 

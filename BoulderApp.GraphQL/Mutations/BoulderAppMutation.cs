@@ -7,6 +7,7 @@ using GraphQL.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace BoulderApp.GraphQL.Mutations
 {
@@ -76,6 +77,22 @@ namespace BoulderApp.GraphQL.Mutations
                     };
                     return await this.Create(attempt);
                 });
+
+            FieldAsync<DeleteResultGraphType>(
+                "deleteProblem",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" }),
+                resolve: async context =>
+                {
+                    await DeleteItem<Problem>(context);
+                    return new { result = "success" };
+                });
+        }
+
+        private async Task DeleteItem<T>(ResolveFieldContext<object> context)
+            where T : BoulderAppData
+        {
+            var id = context.GetArgument<Guid>("id");
+            await Delete<T>(id);
         }
     }
 }

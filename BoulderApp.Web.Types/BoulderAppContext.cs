@@ -10,6 +10,12 @@ namespace BoulderApp.Web.Types
         {
         }
 
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<Circuit>().HasMany(c => c.Problems).WithOne().OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Problem>().HasMany<ProblemAttempt>().WithOne(pa => pa.ProblemAttempted).OnDelete(DeleteBehavior.Cascade);
+        }
+
         public DbSet<Circuit> Circuits { get; set; }
         public DbSet<Session> Sessions { get; set; }
         public DbSet<Problem> Problems { get; set; }
