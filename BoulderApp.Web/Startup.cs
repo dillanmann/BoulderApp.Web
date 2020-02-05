@@ -42,6 +42,7 @@ namespace BoulderApp.Web
             }
             services.AddDbContext<BoulderAppContext>(
                 options => options.UseNpgsql(pgsqlConString));
+            services.AddScoped<BoulderAppRepository>();
 
             if (Configuration.GetValue<bool>("EnableCors"))
             {

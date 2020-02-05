@@ -7,22 +7,20 @@ using GraphQL.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace BoulderApp.GraphQL.Mutations
 {
-    public class BoulderAppMutation : BoulderAppMutationBase
+    public class BoulderAppMutation : ObjectGraphType
     {
-        public BoulderAppMutation(BoulderAppContext dbContext) 
-            : base(dbContext)
+        public BoulderAppMutation(BoulderAppRepository repository)
         {
             FieldAsync<CircuitType>(
                 "createCircuit",
                 arguments: new QueryArguments(new QueryArgument<NonNullGraphType<CircuitInputType>> { Name = "circuit" }),
                 resolve: async context =>
                 {
-                    var center = context.GetArgument<Circuit>("circuit");
-                    return await this.Create(center);
+                    var circuit = context.GetArgument<Circuit>("circuit");
+                    return await repository.CreateAsync(circuit);
                 });
 
             FieldAsync<CenterType>(
@@ -31,7 +29,7 @@ namespace BoulderApp.GraphQL.Mutations
                 resolve: async context =>
                 {
                     var center = context.GetArgument<Center>("center");
-                    return await this.Create(center);
+                    return await repository.CreateAsync(center);
                 });
 
             FieldAsync<ProblemType>(
@@ -40,7 +38,7 @@ namespace BoulderApp.GraphQL.Mutations
                 resolve: async context =>
                 {
                     var problem = context.GetArgument<Problem>("problem");
-                    return await this.Create(problem);
+                    return await repository.CreateAsync(problem);
                 });
 
             FieldAsync<SessionType>(
@@ -54,12 +52,14 @@ namespace BoulderApp.GraphQL.Mutations
                         Name = input.Name,
                         Id = input.Id,
                         Date = input.Date,
-                        User = this.DbContext.Users.Single(u => u.Id == input.UserId),
-                        Center = this.DbContext.Centers.Single(c => c.Id == input.CenterId),
-                        ProblemAttempts = 
-                            this.DbContext.ProblemAttempts.Where(p => input.ProblemAttemptIds.Contains(p.Id.Value)).AsEnumerable() as ICollection<ProblemAttempt>
+                        User = (await repository.GetAllAsync<User>()).Single(u => u.Id == input.UserId),
+                        Center = (await repository.GetAllAsync<Center>()).Single(c => c.Id == input.CenterId),
+                        ProblemAttempts =
+                            (await repository.GetAllAsync<ProblemAttempt>())
+                            .Where(p => input.ProblemAttemptIds.Contains(p.Id.Value))
+                            .AsEnumerable() as ICollection<ProblemAttempt>
                     };
-                    return await this.Create(session);
+                    return await repository.CreateAsync(session);
                 });
 
             FieldAsync<ProblemAttemptType>(
@@ -73,9 +73,9 @@ namespace BoulderApp.GraphQL.Mutations
                         Name = input.Name,
                         Id = input.Id,
                         Sent = input.Sent,
-                        ProblemAttempted = this.DbContext.Problems.Single(p => p.Id == input.ProblemId)
+                        ProblemAttempted = (await repository.GetAllAsync<Problem>()).Single(p => p.Id == input.ProblemId)
                     };
-                    return await this.Create(attempt);
+                    return await repository.CreateAsync(attempt);
                 });
 
             FieldAsync<DeleteResultGraphType>(
@@ -83,16 +83,22 @@ namespace BoulderApp.GraphQL.Mutations
                 arguments: new QueryArguments(new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" }),
                 resolve: async context =>
                 {
-                    await DeleteItem<Problem>(context);
+                    await repository.DeleteAsync<Problem>(context.GetArgument<Guid>("id"));
                     return new { result = "success" };
                 });
-        }
 
-        private async Task DeleteItem<T>(ResolveFieldContext<object> context)
-            where T : BoulderAppData
-        {
-            var id = context.GetArgument<Guid>("id");
-            await Delete<T>(id);
+            FieldAsync<CircuitType>(
+                "addProblemToCircuit",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<AddProblemToCircuitInput>> { Name = "input" }),
+                resolve: async context =>
+                {
+                    var input = context.GetArgument<AddProblemToCircuitDto>("input");
+                    var circuit = (await repository.GetAllAsync<Circuit>()).First(c => c.Id == input.CircuitId);
+                    var problem = (await repository.GetAllAsync<Problem>()).First(p => p.Id == input.ProblemId);
+                    circuit.Problems.Add(problem);
+
+                    return await repository.UpdateAsync(circuit);
+                });
         }
     }
 }
