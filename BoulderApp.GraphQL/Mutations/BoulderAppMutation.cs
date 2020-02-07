@@ -99,6 +99,18 @@ namespace BoulderApp.GraphQL.Mutations
 
                     return await repository.UpdateAsync(circuit);
                 });
+            FieldAsync<CircuitType>(
+                "createProblemInCircuit",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<CreateProblemInCircuitInput>> { Name = "input" }),
+                resolve: async context =>
+                {
+                    var input = context.GetArgument<CreateProblemInCircuitDto>("input");
+                    var circuit = (await repository.GetAllAsync<Circuit>()).First(c => c.Id == input.CircuitId);
+
+                    var problem = await repository.CreateAsync(input.Problem);
+                    circuit.Problems.Add(problem);
+                    return await repository.UpdateAsync(circuit);
+                });
         }
     }
 }
