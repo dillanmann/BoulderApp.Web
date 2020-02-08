@@ -3,6 +3,8 @@ using BoulderApp.Model;
 using BoulderApp.Web.Types;
 using GraphQL.Types;
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BoulderApp.GraphQL
 {
@@ -57,6 +59,9 @@ namespace BoulderApp.GraphQL
             arguments: new QueryArguments(
                 new QueryArgument<IdGraphType> { Name = "id" }),
             resolve: async context => await repository.GetItemByIdAsync<ProblemAttempt>(context.GetArgument<Guid>("id")));
+            FieldAsync<ListGraphType<VGradeType>>(
+                "vGrades",
+                resolve: async context => await Task.FromResult(Enum.GetValues(typeof(VGrade)).OfType<VGrade>()));
         }        
     }
 }
