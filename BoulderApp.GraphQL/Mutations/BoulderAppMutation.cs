@@ -86,6 +86,22 @@ namespace BoulderApp.GraphQL.Mutations
                     await repository.DeleteAsync<Problem>(context.GetArgument<Guid>("id"));
                     return new { result = "success" };
                 });
+            FieldAsync<DeleteResultGraphType>(
+                "deleteCircuit",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" }),
+                resolve: async context =>
+                {
+                    await repository.DeleteAsync<Circuit>(context.GetArgument<Guid>("id"));
+                    return new { result = "success" };
+                });
+            FieldAsync<DeleteResultGraphType>(
+                "deleteCenter",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<IdGraphType>> { Name = "id" }),
+                resolve: async context =>
+                {
+                    await repository.DeleteAsync<Center>(context.GetArgument<Guid>("id"));
+                    return new { result = "success" };
+                });
 
             FieldAsync<CircuitType>(
                 "addProblemToCircuit",
