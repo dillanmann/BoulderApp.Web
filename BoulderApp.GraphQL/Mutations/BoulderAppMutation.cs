@@ -111,6 +111,18 @@ namespace BoulderApp.GraphQL.Mutations
                     circuit.Problems.Add(problem);
                     return await repository.UpdateAsync(circuit);
                 });
+            FieldAsync<CenterType>(
+                "createCircuitInCenter",
+                arguments: new QueryArguments(new QueryArgument<NonNullGraphType<CreateCircuitInCenterInput>> { Name = "input" }),
+                resolve: async context =>
+                {
+                    var input = context.GetArgument<CreateCircuitInCenterDto>("input");
+                    var center = (await repository.GetAllAsync<Center>()).First(c => c.Id == input.CenterId);
+
+                    var circuit = await repository.CreateAsync(input.Circuit);
+                    center.Circuits.Add(circuit);
+                    return await repository.UpdateAsync(center);
+                });
         }
     }
 }
